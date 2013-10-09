@@ -2,37 +2,36 @@
 Created on Sep 16, 2013
 @author: Garcia
 
-This module holds the Bot class. The module's purpose is to provide basic bot
-functionality. Anything beyond that scope should be in a different module.
+This module holds the Bot class.  Its purpose is to provide basic bot
+functionality.  Anything beyond that scope should be in a different
+module.
+
 '''
 
-#Built-in
 import socket
 from time import sleep
 
-#Core
+from bearbot.sub_modules import misc_commands
+
 from bearbot.core.message import *
 from bearbot.core.event import *
 
-#Sub-Modules
-from bearbot.sub_modules import misc_commands
-
 class Bot(object):
-    '''
-    This class is used to create a bot object that connects to an irc server and
-    listens to incoming messages. It runs a loop and receives messages from a socket.
-    It creates Message objects from the messages and passes them to a Handler object
-    to perform commands and other tasks.
-    
-    To drive this class, create a Bot object and use its connect command.
-    
-    Ex. bearbot = Bot('irc.rizon.net', 'Garcia', 'pass123', '#my_channel')
+    ''' Connects to an irc server and listens to incoming messages
+
+    It runs a loop and receives messages from a socket.  Then it
+    creates Message objects to pass to a message handler.  To drive
+    this class, create a Bot object and use its connect command.
+
+    Ex. bearbot = Bot('irc.rizon.net', 'Garcia', 'pass123',
+                      '#my_channel')
         bearbot.connect()
+
     '''
 
-    def __init__(self, host, owner, password, channels, user_name='Bear', nick='Bearbot', 
-                 real_name='I am the bearest', cmd_prefix='.', buffersize=3072, port=6667, 
-                 msg_delay=.5):
+    def __init__(self, host, owner, password, channels, user_name='Bear',
+                 nick='Bearbot', real_name='I am the bearest', cmd_prefix='.',
+                 buffersize=3072, port=6667, msg_delay=.5):
         self.host = host
         self.owner = owner
         self.password = password
@@ -43,21 +42,21 @@ class Bot(object):
         self.cmd_prefix = cmd_prefix
         self.buffersize = buffersize
         self.port = port
-        self.msg_delay = msg_delay #Delay (sec) for flood control
+        self.msg_delay = msg_delay  # Delay (sec) for flood control
 
-        self.on = True  #Running status
+        self.on = True  # Running status
         self.irc = socket.socket()
         self._connect()
     
-    #Helpers
+    # Helpers
     
     def _connect(self):
         ''' Connects to server and configures irc details  '''
-        self.irc.connect((self.host, self.port)) #Connects socket
-        self.set_nick(self.nick) #Sets nickname
+        self.irc.connect((self.host, self.port))
+        self.set_nick(self.nick)
         self.send('USER %s 0 * :%s' % (self.user_name, self.realname))
-        self.join(self.channels) #Joins channel
-        self._listen() #Listens for incoming messages
+        self.join(self.channels)
+        self._listen()  # Listens for incoming messages
 
     def _listen(self):
         ''' Listens for incoming messages '''
@@ -70,16 +69,17 @@ class Bot(object):
                 self.log('Exception occurred: %s' % str(e))
     
     def get_messages(self):
-        ''' Generator that returns Message objects received from host '''
+        ''' Generator to return Message objects received from host '''
         msgs = self.irc.recv(self.buffersize).split(('\r\n').encode())
         for msg in msgs:
             if len(msg) > 3:
                 try:
                     message = Message(msg.decode())
-                except Exception as e: print('** While decoding message: %s' % e)
+                except Exception as e: print('** While decoding message: %s'
+                                             % e)
                 yield message
 
-    #Outgoing Command Methods
+    # Outgoing Command Methods
    
     def send(self, msg):
         ''' Sends message to the host using socket '''
@@ -110,18 +110,18 @@ class Bot(object):
     def set_nick(self, nick):
         ''' Changes bot's nickname '''
         self.send('NICK %s' % nick)
-        #Requires checking for nick change success
-        #Needs to change self.nick on success
-        #Ask for forgiveness if nick unsuccessful (no error checking prior)
+        # Requires checking for nick change success
+        # Needs to change self.nick on success
+        # Ask for forgiveness if nick unsuccessful
     
     def join(self, channels):
         ''' Joins channel(s) '''
         self.send('JOIN %s' % channels)
-        #Requires checking for join success
-        #Needs to update self.channels on join success
-        #Ask for forgiveness if join unsuccessful (no error checking prior)
-        #Leave regular error checking for interface
-        #No loops necessary for JOIN #channel, #channel,... #channel
+        # Requires checking for join success
+        # Needs to update self.channels on join success
+        # Ask for forgiveness if join unsuccessful
+        # Leave regular error checking for interface
+        # No loop necessary: JOIN #channel, #channel,...
         
     def part(self, channels, message=''):
         ''' Parts channel(s) with optional message '''
@@ -129,10 +129,10 @@ class Bot(object):
             self.send('PART %s %s' % ((', ').join(channels), message))
         else:
             self.send('PART %s %s' % (channels, message))
-        #Needs to update self.channels on part
+        # Needs to update self.channels on part
 
-    '''
-    Will need a proper event handling system for this:
+    '''Will need a proper event handling system for this:
+    
     def who(bot, nick):
         bot.send('who %s' % nick)
         return get_msg('who', nick)
@@ -140,14 +140,12 @@ class Bot(object):
     def get_msg():
     '''   
 
-    '''
-    Internal Helper Methods
-    '''
+    # Internal Helper Methods
 
     def log(self, message):
         ''' Logs messages to the console '''
         if message or message != '':
-            print(str(message)) #logs to console
+            print(str(message))  #logs to console
 
     def set_msg_delay(self, seconds):
         ''' Sets delay for messages '''
@@ -162,11 +160,8 @@ class Bot(object):
         ''' Closes the irc connection '''
         self.irc.close()
 
-'''
-Driver
-'''
-
 def main():
+    ''' Driver '''
     bearbot = Bot('irc.rizon.net', 'Garcia', 'hbdhbd123', '#botparty')
 
 if __name__ == '__main__':
