@@ -46,8 +46,8 @@ class SpaghettiHandler(object):
         self.bot.send('PONG %s' % ping_msg.params)
 
 # Dictionary of server commands to their associated handling methods
-handlers.update({'PRIVMSG': Spaghetti_Handler.user_message,
-                 'PING': Spaghetti_Handler.pong})
+handlers.update({'PRIVMSG': SpaghettiHandler.user_message,
+                 'PING': SpaghettiHandler.pong})
 
 
 def main():
