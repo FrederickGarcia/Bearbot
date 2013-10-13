@@ -40,7 +40,7 @@ class Message(object):
             self.command, self.params = raw_msg.split(' ', 1); return
         self.prefix, self.command, self.params = raw_msg.split(' ', 2)
         self.prefix = self.prefix[1:]  # Removes prefix ':'
-        if re.search(r'^\w+!', self.prefix):  # Checks for nick!user@host
+        if re.search(r'^\S+!', self.prefix):  # Checks for nick!user@host
             self.nick, self.uhost = self.prefix.split('!')  # Sets nick, uhost
             self.user, self.host = self.uhost.split('@')  # Sets user, host
 
@@ -54,8 +54,9 @@ class Message(object):
         ''' Outputs attributes in human-readable format '''
         if hasattr(self, 'to_string'):
             return self.to_string
-        if hasattr(self, 'prefix'):
+        if not self.prefix is None:
             return ('%s %s %s' % (self.prefix, self.command, self.params))
+        print('no tostring')
         return ('%s %s' % (self.command, self.params))
 
 
@@ -81,17 +82,47 @@ def privmsg(pm):
     pm.source, pm.content = pm.params.split(':', 1)  # Sets source, content
     pm.source = pm.source.strip()  # Removes trailing ' '
     if hasattr(pm, 'nick'):  # Sets string for str(msg)
-        pm.to_string = ('%s %s@%s %s <%s|%s> %s' % (pm.nick, pm.user, pm.host,
-                                                    pm.command, pm.nick,
-                                                    pm.source, pm.content))
+        pm.to_string = ('%s <%s> %s' % (pm.source, pm.nick, pm.content))
         return
     pm.to_string = ('%s %s <%s> %s' % (pm.prefix, pm.command, pm.source,
                                        pm.content))
 
-def ping(ping_msg):
+def ping(pmsg):
     ''' Sets PING attributes '''
-    ping_msg.params = ping_msg.params[1:]  # Removes the ':'
-    ping_msg.to_string = ('PING %s' % ping_msg.params)
+    pmsg.params = pmsg.params[1:]
+    pmsg.to_string = ('PING %s' % pmsg.params)
+    
+def join(jmsg):
+    ''' Sets JOIN attributes '''
+    jmsg.channel = jmsg.params[1:]
+    jmsg.to_string = ('━━▶  %s (%s) has joined %s' % (jmsg.nick,
+                      jmsg.uhost, jmsg.channel))
+
+def part(pmsg):
+    ''' Sets PART attributes '''
+    pmsg.channel = pmsg.params
+    pmsg.to_string = ('◀━━  %s (%s) has left %s' % (pmsg.nick,
+                      pmsg.uhost, pmsg.channel))
+
+def nick(nmsg):
+    ''' Sets NICK attributes '''
+    nmsg.new_nick = nmsg.params[1:]
+    nmsg.to_string = ('❢  %s is now known as %s' % (nmsg.nick,
+                      nmsg.new_nick))
+    
+def quit_(qmsg):
+    ''' Sets QUIT attributes '''
+    qmsg.quit_message = qmsg.params[1:]
+    qmsg.to_string = ('◀━━  %s (%s) has quit (%s)' % (qmsg.nick,
+                      qmsg.uhost, qmsg.quit_message))
+
+def notice(nmsg):
+    ''' Sets NOTICE attributes '''
+    nmsg.source, nmsg.content = nmsg.params.split(':', 1)
+    if hasattr(nmsg, 'nick'):
+        nmsg.to_string = ('%s (%s) - NOTICE - %s' % (nmsg.nick, nmsg.uhost,
+                                                     nmsg.content)); return
+    nmsg.to_string = ('%s - NOTICE - %s' % (nmsg.prefix, nmsg.content))
 
 ''' Command Response Messages
 
@@ -121,18 +152,43 @@ def end_of_who(end_msg):
     param_parts, end_msg.content = end_msg.params.split(':')
     end_msg.name = param_parts.split()[1]
 
+def motd(motd_msg):
+    ''' (372, 375, 376 - MOTD) sets attributes for MOTD messages'''
+    motd_msg.source, motd_msg.content = motd_msg.params.split(':', 1)
+    motd_msg.to_string = ('✉  %s' % motd_msg.content)
+
 # Dictionary of server commands to their respective setup methods
-server_commands = {'PRIVMSG': privmsg, 'PING': ping, '352': who_reply,
-                   '315': end_of_who}
+server_commands = {
+        'PRIVMSG': privmsg, 'PING': ping, '352': who_reply,
+        '315': end_of_who, '372': motd, '375': motd, '376': motd,
+        'JOIN': join, 'PART': part, 'NICK': nick, 'QUIT': quit_,
+        'NOTICE': notice
+    }
 
 def main():
     ''' Test stub '''
-    tests = [":Garcia!~Frederick@B.E.A.R.S PRIVMSG #botparty :I love #bears",
-             ':Bweeze086!~bweeze@bweeze.086 PRIVMSG Garcia :does this work?',
-             'PING :92874389239837',
-             ':irc.cccp-project.net 352 Garcia #bears Crono is.better.than.'\
-             'you.at.battlefield * Crono Hr+ :0 Crono',
-             ':irc.cccp-project.net 315 Garcia crono :End of /WHO list.']
+    tests = [
+        ":Garcia!~Frederick@B.E.A.R.S PRIVMSG #botparty :I love #bears",
+        ':Bweeze086!~bweeze@bweeze.086 PRIVMSG Garcia :does this work?',
+        'PING :92874389239837',
+        ':irc.cccp-project.net 352 Garcia #bears Crono is.better.than.you.at'\
+        '.battlefield * Crono Hr+ :0 Crono',
+        ':irc.cccp-project.net 315 Garcia crono :End of /WHO list.',
+        ':Umbreoff!EliteBNC@why.does.everyone.hate.me.so.much NICK :Umbreon',
+        ':Combot!~Combot@my.name.isnt.cumbot QUIT :Ping timeout: 240 seconds',
+        ':MisterKpak!~IceChat77@Rizon-589BB261.bflony.fios.verizon.net PART '\
+        '#chat',
+        ':MisterKpak!~IceChat77@Rizon-589BB261.bflony.fios.verizon.net JOIN '\
+        ':#chat',
+        ':MisterKpak!~IceChat77@Rizon-589BB261.bflony.fios.verizon.net QUIT '\
+        ':Killed (irc.sxci.net (4 joins/parts in #chat within 3 seconds.))',
+        ':Ziginox!~geek@418.I.am.a.teapot PRIVMSG #chat :ACTION is blown aw'\
+        "ay by the force of Rosie's statement",
+        ':Global!service@rizon.net NOTICE Bearbot :[Logon News - May 21 201'\
+        '1] First time on Rizon? Be sure to read the FAQ! http://s.rizon.ne'\
+        't/FAQ',
+        ':irc.cccp-project.net NOTICE AUTH :*** Looking up your hostname...'
+    ]
 
     for test in tests:
         print(str(Message(test)))

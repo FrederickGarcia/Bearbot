@@ -42,7 +42,7 @@ class Bot(object):
         self.cmd_prefix = cmd_prefix
         self.buffersize = buffersize
         self.port = port
-        self.msg_delay = msg_delay  # Delay (sec) for flood control
+        self.msg_delay = msg_delay  # Flood control
 
         self.on = True  # Running status
         self.irc = socket.socket()
@@ -63,8 +63,8 @@ class Bot(object):
         while self.on :
             try:
                 for msg in self.get_messages():
-                    self.log('<< %s' % (msg))
-                    Spaghetti_Handler(self, msg)
+                    self.log('◀    %s' % (msg))
+                    SpaghettiHandler(self, msg)
             except Exception as e:
                 self.log('Exception occurred: %s' % str(e))
     
@@ -84,7 +84,7 @@ class Bot(object):
     def send(self, msg):
         ''' Sends message to the host using socket '''
         self.irc.send(('%s\r\n' % msg).encode())
-        self.log('>> %s' % msg)
+        self.log('▶    %s ' % msg)
         sleep(self.msg_delay)
     
     def send_generic(self, command, target, message):

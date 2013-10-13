@@ -111,7 +111,7 @@ from bearbot.core.command import *
 @no_args
 def hbd(cmd):
     ''' A test user command definition '''
-    cmd.reply("Happy bear day, %s. We's Python now" % cmd.msg.nick)
+    cmd.reply("Happy bear day, %s!" % cmd.msg.nick)
 
 @as_string
 def rot_13(cmd):
@@ -153,6 +153,7 @@ def bquit(cmd):
     #Bear in mind, quit messages only show after being
     #connected to the server for a few minutes (spam protection)
 
+@owner
 def delay(cmd):
     ''' delay *[seconds] - Sets message delay time in seconds '''
     if not cmd.args:

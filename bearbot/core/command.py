@@ -48,7 +48,6 @@ class Command(object):
         self.root, self.args = self.content[0], None
         if len(self.content) > 1:
             self.args = self.content[1:]
-        command_dic[self.root](self)  # Runs command
     
     def __getattr__(self, attr):
         ''' Makes class a proxy class to Bot '''
@@ -89,6 +88,7 @@ common functionality to commands.
 @owner         - Command accessible only to the owner
 @requires_args - Command that requires arguments
 @no_args       - Command require no arguments
+@one_arg       - Command requires one argument
 @as_string     - Parses arguments to string, @requires_args
 
 '''
