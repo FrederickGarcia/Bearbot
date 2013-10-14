@@ -119,10 +119,11 @@ def rot_13(cmd):
     encoder = getencoder('rot-13')
     cmd.reply(encoder(cmd.args)[0])
 
+@one_arg
 def who(cmd):
     ''' who [nick] - Returns who information '''
-    cmd.send('who %s' % cmd.args[0])
-    cmd.bot.log('who %s' % cmd.args[0])
+    who = cmd.bot.who(cmd.args[0])
+    cmd.reply(who)
 
 @as_string
 def action(cmd):
@@ -140,14 +141,14 @@ def reverse(cmd):
     cmd.reply(cmd.args[::-1])
 
 @owner
-def bquit(cmd):
+def quit_(cmd):
     ''' quit - Disconnects bot from the server '''
     if cmd.args != None:
         quit_message = (' ').join(cmd.args)
     else:
         quit_message = 'Okay, bye'  # Default quit message
     cmd.bot.quit(quit_message)
-    cmd.bot.on = False  # Jumps out of monitor loop
+    cmd.bot.alive = False  # Kills bot
     cmd.bot.close_connection()
     cmd.bot.log('End of session.')
     #Bear in mind, quit messages only show after being
@@ -209,11 +210,11 @@ def bots(cmd):
     ''' Reports itself as a bot '''
     cmd.reply('Reporting in.')
 
-def bhelp(cmd):
+def help_(cmd):
     ''' help *[command] - Lists commands, their syntax, and descriptions. '''
     if not cmd.args:
         cmd.notify('Type %shelp [command] for the syntax and description of'\
-                   'a command' % cmd.bot.cmd_prefix)
+                   ' a command' % cmd.bot.cmd_prefix)
         cmd.notify(cmd.cmd_prefix +
                    (' %s' % cmd.cmd_prefix).join(misc_commands.keys()))
         return
@@ -257,9 +258,9 @@ def rps(cmd):
     return
 
 # Dictionary of commands and their respective function references
-misc_commands = {'hbd': hbd, 'quit': bquit, 'join': join, 'part': part,
+misc_commands = {'hbd': hbd, 'quit': quit_, 'join': join, 'part': part,
                  'delay': delay, 'prefix': prefix, 'who': who,
                  'action': action, 'reverse': reverse, 'bots': bots,
-                 'help': bhelp, 'say': say, 'rot13': rot_13, 'rps': rps}
+                 'help': help_, 'say': say, 'rot13': rot_13, 'rps': rps}
 
 command_dic.update(misc_commands)  # Updates the master command dictionary

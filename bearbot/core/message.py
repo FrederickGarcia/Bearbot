@@ -56,7 +56,6 @@ class Message(object):
             return self.to_string
         if not self.prefix is None:
             return ('%s %s %s' % (self.prefix, self.command, self.params))
-        print('no tostring')
         return ('%s %s' % (self.command, self.params))
 
 

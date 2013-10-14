@@ -34,8 +34,11 @@ class SpaghettiHandler(object):
     def user_message(self, msg):
         ''' Handles user messages (user/channel) '''
         if msg.content[0] == self.bot.cmd_prefix and len(msg.content) > 1:
-            cmd = Command(self.bot, msg)
-            command.command_dic[cmd.root](cmd)  # Runs commandreturn #runs a command
+            try:
+                cmd = Command(self.bot, msg)
+                command.command_dic[cmd.root](cmd)  # Runs command
+            except Exception as e:
+                self.bot.log('Command exception: %s' % e)
 
         # Checks for a trigger word and replies with value
         if chatter.chatter_on:
@@ -48,7 +51,6 @@ class SpaghettiHandler(object):
 # Dictionary of server commands to their associated handling methods
 handlers.update({'PRIVMSG': SpaghettiHandler.user_message,
                  'PING': SpaghettiHandler.pong})
-
 
 def main():
     ''' Test stub '''
