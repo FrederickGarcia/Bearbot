@@ -6,9 +6,9 @@ This module holds the Bot class.  Its purpose is to provide basic bot
 functionality.  Anything beyond that scope should be in a different
 module.
 
-Note: The msg_generator produces an infinite amount of messages for the
-      duration of the bot's life. There's a get_response method that
-      waits for a particular server response and returns it. It is very
+Note: The msg_gen produces an infinite amount of messages for the
+      duration of the bot's life. There's a get_reply method that
+      waits for a particular server reply and returns it. It is very
       helpful. It throws all the messages to the handle method until it
       finds what its looking for and then returns flow back to the
       listener.
@@ -24,6 +24,8 @@ from bearbot.core.message import *
 from bearbot.core.event import *
 
 except_str = '\n◢✘◣ EXCEPTION OCCURRED - '
+crlf = '\r\n'.encode()
+cr = '\r'.encode()
 
 class Bot(object):
     ''' Connects to an irc server and listens to incoming messages
@@ -44,7 +46,7 @@ class Bot(object):
         self.host = host
         self.owner = owner
         self.password = password
-        self.channels = channels
+        self.channels = self._set_channels(channels)
         self.user_name = user_name
         self.nick = nick
         self.realname = real_name
@@ -57,31 +59,38 @@ class Bot(object):
         self.irc = socket.socket()
         self._connect()
     
-    # Helpers
+    # Initialization
     
     def _connect(self):
         ''' Connects to server and configures irc details  '''
         self.irc.connect((self.host, self.port))
         self.set_nick(self.nick)
         self.send('USER %s 0 * :%s' % (self.user_name, self.realname))
-        self.join(self.channels)
+        errors = self.join(self.channels)
         self._listen()
     
-    def _listen(self):
-        for msg in self.msg_generator():
-            self.handle(msg)
+    def _set_channels(self, channels):
+        ''' Sets channels as list '''
+        if isinstance(channels, str):
+            return [channels,]
+        return channels
     
-    def msg_generator(self):
-        ''' Provides messages until bot dies '''
+    def _listen(self):
         while self.alive:
-            for msg in self.irc.recv(self.buffer).split('\r\n'.encode()):
-                if len(msg) > 3:
-                    try:
-                        yield Message(msg.decode())
-                    except Exception as e:
-                        self.log('%s %s\n' % (except_str, str(e)))
+            for msg in self.msg_gen():
+                self.handle(msg)
+    
+    def msg_gen(self):
+        ''' Provides messages until bot dies '''
+        for msg in self.irc.recv(self.buffer).split(crlf):
+            if not len(msg) > 3:
+                continue
+            try:
+                yield Message(msg.decode())
+            except Exception as e:
+                self.log('%s %s\n' % (except_str, str(e)))
 
-    # Outgoing Command Methods
+    # Sending Methods
    
     def send(self, msg):
         ''' Sends message to the host using socket '''
@@ -116,41 +125,84 @@ class Bot(object):
         # Needs to change self.nick on success
     
     def join(self, channels):
-        ''' Joins channel(s) '''
-        self.send('JOIN %s' % channels)
-        # Requires checking for join success
-        # Needs to update self.channels on join success..
+        ''' Joins channel(s) and returns None or error messages '''
+        
+        # Error reply commands from IRC RFC 2812 for JOIN
+        errors = ['403', '405', '407', '437', '461',
+                  '471', '473', '474', '475', '476', '479']
+        error_msgs = []
+        
+        if isinstance(channels, str):  # Forces list
+            channels = [channels,]
+
+        for channel in channels:
+            self.send('JOIN %s' % channel)
+            for reply in self.get_reply(kill=errors+['353']):  # Verify join success
+                if reply.command in errors:
+                    channels.remove(channel)
+                    error_msgs.append(reply)
+                    print(error_msgs)
+        self.channels.append(channels)
+        
+        print(error_msgs)
+        if error_msgs == []:
+            return None
+        return error_msgs
         
     def part(self, channels, message=''):
         ''' Parts channel(s) with optional message '''
-        if not isinstance(channels, str):
-            self.send('PART %s %s' % ((', ').join(channels), message))
-        else:
-            self.send('PART %s %s' % (channels, message))
-        self.channels -= channels
+        if not isinstance(channels, list):
+            channels = [channels,]
+
+        for channel in channels:
+            self.send('PART %s %s' % (channel, message))
+        self.channels.remove(channels)
     
-    def who(self, nick):
-        ''' Sends who command and returns response '''
-        self.send('WHO %s' % nick)
-        return self.get_response('352')
-
-    # Utils
-
     def log(self, message):
         ''' Logs messages to the console '''
         if not message is None:
             print(str(message))  #logs to console
     
-    def get_response(self, command):
-        ''' Returns server response command code message '''
-        for msg in self.msg_generator():
-            self.handle(msg)
-            if msg.command == command:
-                return msg
-            # Needs a time-out
-            # Will also need to be a generator
-            # to allow for multiple responses (/who #channel etc)
-            
+    # Receiving methods
+    
+    def who(self, target):
+        ''' Sends who command and returns reply '''
+        self.send('WHO %s' % target)
+        return self.get_reply('352', kill=['315', '401', '403'])
+        # 352 RPL_WHOREPLY, 315 RPL_ENDOFWHO, 401 ERR_NOSUCHNICK,
+        # 403 ERR_NOSUCHCHANNEL
+    
+    def names(self, target):
+        ''' Sends names command and returns reply '''
+        self.send('NAMES %s' % target)
+        return self.get_reply('353', kill=['366', '402'])
+        # 353 RPL_NAMREPLY, 366 RPL_ENDOFNAMES, 402 ERR_NOSUCHSERVER
+
+    # Utils
+    
+    def get_reply(self, commands=[], kill=[]):
+        ''' Generator to return server command replies
+        
+        The commands parameter is the server reply command for the
+        message reply to be returned (ie. '352' for a RPL_WHOREPLY).
+        
+        The kill parameter is the server reply command that signifies
+        StopIteration.  (ie. ['315', '401', '403'] for RPL_ENDOFWHO,
+        ERR_NOSUCHNICK, and ERR_NOSUCHCHANNEL.  If None by default,
+        StopIteration occurs on first command found in commands.
+        
+        '''
+        while True:
+            for msg in self.msg_gen():
+                self.handle(msg)
+                if msg.command in commands:
+                    if kill is []:
+                        return msg
+                    yield msg
+                if msg.command in kill:
+                    return msg
+
+    
     def handle(self, msg):
         ''' Handles Messages '''
         self.log('◀    %s' % (msg))
@@ -159,7 +211,7 @@ class Bot(object):
     def set_msg_delay(self, seconds):
         ''' Sets delay for messages '''
         try:
-            if not seconds >= 0 and not seconds <= 30:
+            if not 0 <= seconds <= 10:
                 return
             self.msg_delay = seconds
             self.log('✽✽ Message delay set to: %s seconds ✽✽' % seconds)

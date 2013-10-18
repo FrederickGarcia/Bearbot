@@ -108,22 +108,12 @@ from codecs import getencoder
 
 from bearbot.core.command import *
 
-@no_args
-def hbd(cmd):
-    ''' A test user command definition '''
-    cmd.reply("Happy bear day, %s!" % cmd.msg.nick)
-
-@as_string
-def rot_13(cmd):
-    ''' rot13 [message] - encodes (decodes) rot13 '''
-    encoder = getencoder('rot-13')
-    cmd.reply(encoder(cmd.args)[0])
-
 @one_arg
 def who(cmd):
     ''' who [nick] - Returns who information '''
-    who = cmd.bot.who(cmd.args[0])
-    cmd.reply(who)
+    who_list = cmd.bot.who(cmd.args[0])
+    for who in who_list:
+        cmd.reply(who)
 
 @as_string
 def action(cmd):
@@ -134,11 +124,6 @@ def action(cmd):
 def say(cmd):
     ''' say [user|#channel] [message] '''
     cmd.say(cmd.args[0], (' ').join(cmd.args[1:]))
-
-@as_string
-def reverse(cmd):
-    ''' reverse [string] - Replies with string reversed '''
-    cmd.reply(cmd.args[::-1])
 
 @owner
 def quit_(cmd):
@@ -166,8 +151,8 @@ def delay(cmd):
                   cmd.cmd_prefix)
         return
     try:
-        if not float(cmd.args[0]) < 30:
-            cmd.reply('Message delay limit is 30 seconds.')
+        if not 0 <= float(cmd.args[0]) <= 10:
+            cmd.reply('Delay must be from 0 - 10 seconds.')
             return
         cmd.bot.set_msg_delay(float(cmd.args[0]))
         cmd.reply('Message delay set to %s seconds.' % float(cmd.args[0]))
@@ -189,15 +174,12 @@ def prefix(cmd):
 @requires_args
 def join(cmd):
     ''' join [#channel(s)] - Bot joins channels specified '''
-    channels = ''
-    for channel in cmd.args:  # Joins each channel in list
-        if not re.search(r'^#\w+', channel):
-            cmd.reply('Invalid arguments for /join #channel(s): %s' % channel)
-            continue
-        cmd.bot.join(channel)
-        channels += ('%s ' % channel)
-    if len(channels) > 0:
-        cmd.reply('Joining channel(s): %s' % channels)
+    print('Misc commands: before receiving error list')
+    errors = cmd.bot.join(cmd.args)
+    print('Misc commands: after receiving error list %s' % errors)
+    if errors is not None:
+        for e in errors:
+            cmd.reply('Error: %s' % e.params)
 
 def part(cmd):
     ''' part [#channel(s)] - Bot parts a channel. '''
@@ -226,6 +208,28 @@ def help_(cmd):
                                  command_dic[cmd.args[0]].__doc__))
         return
     cmd.notify('%s is not a command' % cmd.args[0])
+
+#######################################################################
+#                                                                     #
+#                     Fun / Useless Commands                          #
+#                                                                     #
+#######################################################################
+
+@no_args
+def hbd(cmd):
+    ''' A test user command definition '''
+    cmd.reply("Happy bear day, %s!" % cmd.msg.nick)
+
+@as_string
+def rot_13(cmd):
+    ''' rot13 [message] - encodes (decodes) rot13 '''
+    encoder = getencoder('rot-13')
+    cmd.reply(encoder(cmd.args)[0])
+
+@as_string
+def reverse(cmd):
+    ''' reverse [string] - Replies with string reversed '''
+    cmd.reply(cmd.args[::-1])
 
 @one_arg
 def rps(cmd):

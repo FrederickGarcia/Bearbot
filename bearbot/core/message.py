@@ -28,35 +28,47 @@ class Message(object):
 
     '''
 
-    def __init__(self, raw_msg):
-        self.raw_msg = raw_msg.strip('\r\n')  # Raw message from host
-        self.set_parts(self.raw_msg)  # Creates prefix, command, and params
-        self.set_params()  # Sets attributes according to command type
+    def __init__(self, raw):
+        self.raw = raw.strip('\r\n')  # Raw message from host
+        self.parse(self.raw)  # Sets prefix, command, and params
+        self.parse_params()  # Sets attributes according to command type
 
-    def set_parts(self, raw_msg):
-        ''' Organizes message into three main parts and subparts '''
-        if not raw_msg[0] == ':':  # Prefix, command, and params
-            self.prefix = None
-            self.command, self.params = raw_msg.split(' ', 1); return
-        self.prefix, self.command, self.params = raw_msg.split(' ', 2)
-        self.prefix = self.prefix[1:]  # Removes prefix ':'
-        if re.search(r'^\S+!', self.prefix):  # Checks for nick!user@host
-            self.nick, self.uhost = self.prefix.split('!')  # Sets nick, uhost
-            self.user, self.host = self.uhost.split('@')  # Sets user, host
+    def parse(self, raw):
+        ''' Parses message into three main parts and subparts '''
+        
+        # Message = *prefix, command, params
+        if not raw[0] == ':':
+            self.prefix = ''
+            self.command, self.params = raw.split(' ', 1)
+        else:
+            self.prefix, self.command, self.params = raw.split(' ', 2)
+            self.prefix = self.prefix[1:]  # Removes colon
+            if '!' in self.prefix:  # Checks for nick!user@host
+                self.nick, self.uhost = self.prefix.split('!')  # nick, uhost
+                self.user, self.host = self.uhost.split('@')  # user, host
 
-    def set_params(self):
-        ''' Returns parameters depending on command type '''
+        # Params = middle, trailing
+        if ':' in self.params:
+            self.middle, self.trailing = self.params.split(':', 1)
+        else:
+            self.middle, self.trailing = self.params, ''
+        self.middle = self.middle.strip()  # Removes trailing ' '
+
+    def parse_params(self):
+        ''' Sets attributes depending on message type '''
         if self.command in server_commands.keys(): 
-            # Runs method depending on command
             server_commands[self.command](self)
 
     def __str__(self):
         ''' Outputs attributes in human-readable format '''
-        if hasattr(self, 'to_string'):
-            return self.to_string
+        if hasattr(self, 'string'):
+            return self.string
+        
+        # Default strings for messages undefined
         if not self.prefix is None:
-            return ('%s %s %s' % (self.prefix, self.command, self.params))
-        return ('%s %s' % (self.command, self.params))
+            return ('%s %s %s %s' % (self.prefix, self.command, self.middle,
+                                     self.trailing))
+        return ('%s %s %s' % (self.command, self.middle, self.trailing))
 
 
 ''' Parameter setup functions
@@ -78,50 +90,49 @@ command type. To manage its parameters, use its msg.
 
 def privmsg(pm):
     ''' Sets PRIVMSG attributes '''
-    pm.source, pm.content = pm.params.split(':', 1)  # Sets source, content
-    pm.source = pm.source.strip()  # Removes trailing ' '
-    if hasattr(pm, 'nick'):  # Sets string for str(msg)
-        pm.to_string = ('%s <%s> %s' % (pm.source, pm.nick, pm.content))
-        return
-    pm.to_string = ('%s %s <%s> %s' % (pm.prefix, pm.command, pm.source,
-                                       pm.content))
+    pm.source, pm.content = pm.middle, pm.trailing  # Sets source, content
+    
+    # Sets human-readable string
+    if hasattr(pm, 'nick'):
+        pm.string = ('%s <%s> %s' % (pm.source, pm.nick, pm.content)); return
+    pm.string = ('%s %s <%s> %s' % (pm.prefix, pm.command,pm.source,
+                                    pm.content))
 
 def ping(pmsg):
     ''' Sets PING attributes '''
-    pmsg.params = pmsg.params[1:]
-    pmsg.to_string = ('PING %s' % pmsg.params)
+    pmsg.string = ('%s %s' % (pmsg.command, pmsg.trailing))
     
 def join(jmsg):
     ''' Sets JOIN attributes '''
-    jmsg.channel = jmsg.params[1:]
-    jmsg.to_string = ('━━▶  %s (%s) has joined %s' % (jmsg.nick,
-                      jmsg.uhost, jmsg.channel))
+    jmsg.channel = jmsg.middle
+    jmsg.string = ('━━▶  %s (%s) has joined %s' %
+                   (jmsg.nick, jmsg.uhost, jmsg.channel))
 
 def part(pmsg):
     ''' Sets PART attributes '''
-    pmsg.channel = pmsg.params
-    pmsg.to_string = ('◀━━  %s (%s) has left %s' % (pmsg.nick,
-                      pmsg.uhost, pmsg.channel))
+    pmsg.channel = pmsg.middle
+    pmsg.string = ('◀━━  %s (%s) has left %s' %
+                   (pmsg.nick, pmsg.uhost, pmsg.channel))
 
 def nick(nmsg):
     ''' Sets NICK attributes '''
-    nmsg.new_nick = nmsg.params[1:]
-    nmsg.to_string = ('❢  %s is now known as %s' % (nmsg.nick,
-                      nmsg.new_nick))
+    nmsg.new_nick = nmsg.trailing
+    nmsg.string = ('❢  %s is now known as %s' %
+                   (nmsg.nick, nmsg.new_nick))
     
 def quit_(qmsg):
     ''' Sets QUIT attributes '''
     qmsg.quit_message = qmsg.params[1:]
-    qmsg.to_string = ('◀━━  %s (%s) has quit (%s)' % (qmsg.nick,
+    qmsg.string = ('◀━━  %s (%s) has quit (%s)' % (qmsg.nick,
                       qmsg.uhost, qmsg.quit_message))
 
 def notice(nmsg):
     ''' Sets NOTICE attributes '''
-    nmsg.source, nmsg.content = nmsg.params.split(':', 1)
+    nmsg.source, nmsg.content = nmsg.middle, nmsg.trailing
     if hasattr(nmsg, 'nick'):
-        nmsg.to_string = ('%s (%s) - NOTICE - %s' % (nmsg.nick, nmsg.uhost,
-                                                     nmsg.content)); return
-    nmsg.to_string = ('%s - NOTICE - %s' % (nmsg.prefix, nmsg.content))
+        nmsg.string = ('%s (%s) - NOTICE - %s' %
+                       (nmsg.nick, nmsg.uhost, nmsg.content)); return
+    nmsg.string = ('%s - NOTICE - %s' % (nmsg.prefix, nmsg.content))
 
 ''' Command Response Messages
 
@@ -134,34 +145,28 @@ responses to commands given to them.
 
 def who_reply(who):
     ''' (352 - RPL_WHOREPLY) sets attributes for WHO command replies '''
-    param_parts = who.params.split(None, 8)
-    hopcount = param_parts[7]
-    hopcount = hopcount[1:] #Removes ':'
-    who.who_reply = {'channel': param_parts[1],  # Channel
-                     'user': param_parts[2],  # Username
-                     'host': param_parts[3],  # Host
-                     'server': param_parts[4],  # Server
-                     'nick': param_parts[5],  # Nickname
-                     'flags': param_parts[6],  # Flags
-                     'hopcount': hopcount,  # Hop Count
-                     'realname': param_parts[8]}  # Realname
+    who.source, who.channel, who.user, who.host, who.server, who.nick,\
+    who.flags = who.middle.split()
+    who.hopcount, who.realname = who.trailing.split()
+    
+    who.string = ('%s %s %s@%s (%s)' %
+                  (who.channel, who.nick, who.user, who.host, who.realname))
 
 def end_of_who(end_msg):
     ''' (315 - RPL_ENDOFWHO) sets attributes for ENDOFWHO messages '''
-    param_parts, end_msg.content = end_msg.params.split(':')
-    end_msg.name = param_parts.split()[1]
+    end_msg.source, end_msg.target = end_msg.middle.split()
+    end_msg.content = end_msg.trailing
 
 def motd(motd_msg):
     ''' (372, 375, 376 - MOTD) sets attributes for MOTD messages'''
-    motd_msg.source, motd_msg.content = motd_msg.params.split(':', 1)
-    motd_msg.to_string = ('✉  %s' % motd_msg.content)
+    motd_msg.source, motd_msg.content = motd_msg.middle, motd_msg.trailing
+    motd_msg.string = ('✉  %s' % motd_msg.content)
 
 # Dictionary of server commands to their respective setup methods
 server_commands = {
-        'PRIVMSG': privmsg, 'PING': ping, '352': who_reply,
-        '315': end_of_who, '372': motd, '375': motd, '376': motd,
-        'JOIN': join, 'PART': part, 'NICK': nick, 'QUIT': quit_,
-        'NOTICE': notice
+        'PRIVMSG': privmsg, 'PING': ping, '352': who_reply, '315': end_of_who, '372': motd,
+        '375': motd, '376': motd, 'JOIN': join, 'PART': part, 'NICK': nick,
+        'QUIT': quit_, 'NOTICE': notice
     }
 
 def main():
@@ -191,6 +196,6 @@ def main():
 
     for test in tests:
         print(str(Message(test)))
-    
+
 if __name__ == '__main__':
     main()
