@@ -22,10 +22,10 @@ from bearbot.sub_modules import misc_commands
 
 from bearbot.core.message import *
 from bearbot.core.event import *
+from bearbot.core import config
 
 except_str = '\n◢✘◣ EXCEPTION OCCURRED - '
 crlf = '\r\n'.encode()
-cr = '\r'.encode()
 
 class Bot(object):
     ''' Connects to an irc server and listens to incoming messages
