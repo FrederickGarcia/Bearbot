@@ -123,7 +123,10 @@ def action(cmd):
 @requires_args
 def say(cmd):
     ''' say [user|#channel] [message] '''
-    cmd.say(cmd.args[0], (' ').join(cmd.args[1:]))
+    if cmd.args[1] == '/me':
+        cmd.action(cmd.args[0], (' ').join(cmd.args[2:]))
+    else:
+        cmd.say(cmd.args[0], (' ').join(cmd.args[1:]))
 
 @owner
 def quit_(cmd):
@@ -171,6 +174,7 @@ def prefix(cmd):
         cmd.cmd_prefix = cmd.args[0]
         cmd.reply("Command prefix set to: %s" % cmd.args[0])
 
+@owner
 @requires_args
 def join(cmd):
     ''' join [#channel(s)] - Bot joins channels specified '''
@@ -181,6 +185,7 @@ def join(cmd):
         for e in errors:
             cmd.reply('Error: %s' % e.params)
 
+@owner
 def part(cmd):
     ''' part [#channel(s)] - Bot parts a channel. '''
     if cmd.args is None and re.search(r'^#', cmd.msg.source): 
@@ -198,7 +203,7 @@ def help_(cmd):
         cmd.notify('Type %shelp [command] for the syntax and description of'\
                    ' a command' % cmd.bot.cmd_prefix)
         cmd.notify(cmd.cmd_prefix +
-                   (' %s' % cmd.cmd_prefix).join(misc_commands.keys()))
+                   (' %s' % cmd.cmd_prefix).join(command_dic.keys()))
         return
     if len(cmd.args) > 1:
         cmd.notify('The %s help command takes only one argument')
