@@ -8,12 +8,13 @@ spaghetti right now.
 '''
 
 import threading
-
-from bearbot.sub_modules import chatter
 from time import sleep
 
 from bearbot.core import command
 from bearbot.core.command import Command
+
+# The chatter import could be eliminated with the proper event system
+from applications import chatter
 
 handlers = {} #Dictionary of server command/handlers
 
