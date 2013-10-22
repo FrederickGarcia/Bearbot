@@ -12,3 +12,4 @@ NSA:We'll take it from here. You've done a great service for your country. Don't
 America:Murrica!
 honey:Honey? Oh, I put honey on EVERYTHING!
 Beer:Did you know that bears invented beer? Well they did. It's true!
+Bearbot, Bearbot, what do I see:A room full of bears trying to steal my IP!
