@@ -15,6 +15,7 @@ the misc_commands module.
 
 '''
 
+import re
 from functools import wraps
 
 # Dictionary of commands and associated functions
@@ -75,7 +76,12 @@ class Command(object):
 
     def reply(self, message):
         ''' Replies to user command source with message '''
-        self.bot.say(self.msg.source, message)
+        if re.search(r'\n', message):
+            messages = message.split('\n')
+            for msg in messages:
+                self.bot.say(self.msg.source, msg)
+        else:
+            self.bot.say(self.msg.source, message)
         
 ''' Decorators
 
