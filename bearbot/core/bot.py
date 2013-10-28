@@ -18,8 +18,6 @@ Note: The msg_gen produces an infinite amount of messages for the
 import socket
 from time import sleep
 
-from bearbot.sub_modules import misc_commands
-
 from bearbot.core.message import *
 from bearbot.core.event import *
 from bearbot.core import config
@@ -36,7 +34,7 @@ class Bot(object):
 
     Ex. bearbot = Bot('irc.rizon.net', 'Garcia', 'pass123',
                       '#my_channel')
-        bearbot.connect()
+        bearbot._connect()
 
     '''
 
