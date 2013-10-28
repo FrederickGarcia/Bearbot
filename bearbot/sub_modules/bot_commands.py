@@ -11,6 +11,6 @@ def privmsg_(handler, msg):
     if msg.content[0] == handler.bot.cmd_prefix and len(msg.content) > 1:
         try:
             cmd = Command(handler.bot, msg)
-            command.command_dic[cmd.root](cmd)  # Runs command
+            command_dic[cmd.root](cmd)  # Runs command
         except Exception as e:
             handler.bot.log('Command exception: %s' % e)
