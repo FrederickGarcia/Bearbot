@@ -158,7 +158,10 @@ class Bot(object):
     def log(self, message):
         ''' Logs messages to the console '''
         if not message is None:
-            print(str(message))  #logs to console
+            try:
+                print(str(message))  #logs to console
+            except Exception as e:
+                print('%s %s' % (except_str, e))
     
     # Receiving methods
     
