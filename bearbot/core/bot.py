@@ -24,7 +24,7 @@ from bearbot.core.message import *
 from bearbot.core.event import *
 from bearbot.core import config
 
-except_str = '\n◢✘◣ EXCEPTION OCCURRED - '
+except_str = 'EXCEPTION OCCURRED - '
 crlf = '\r\n'.encode()
 
 class Bot(object):
@@ -57,7 +57,6 @@ class Bot(object):
 
         self.alive = True  # Running status
         self.irc = socket.socket()
-        self._connect()
     
     # Initialization
     
@@ -95,7 +94,7 @@ class Bot(object):
     def send(self, msg):
         ''' Sends message to the host using socket '''
         self.irc.send(('%s\r\n' % msg).encode())
-        self.log('▶    %s ' % msg)
+        self.log('%s ' % msg)
         sleep(self.msg_delay)
     
     def send_generic(self, command, target, message):
@@ -205,7 +204,7 @@ class Bot(object):
     
     def handle(self, msg):
         ''' Handles Messages '''
-        self.log('◀    %s' % (msg))
+        self.log('%s' % (msg.raw))
         SpaghettiHandler(self, msg)
 
     def set_msg_delay(self, seconds):
@@ -214,7 +213,7 @@ class Bot(object):
             if not 0 <= seconds <= 10:
                 return
             self.msg_delay = seconds
-            self.log('✽✽ Message delay set to: %s seconds ✽✽' % seconds)
+            self.log('Message delay set to: %s seconds ' % seconds)
         except Exception as e:
             self.log('%s (Message delay) ' % (except_str, e))
 
@@ -225,6 +224,7 @@ class Bot(object):
 def main():
     ''' Driver '''
     bearbot = Bot('irc.rizon.net', 'Garcia', 'hbdhbd123', '#botparty')
+    bearbot._connect()
 
 if __name__ == '__main__':
     main() 
