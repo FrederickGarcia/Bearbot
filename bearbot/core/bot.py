@@ -15,7 +15,7 @@ Note: The msg_gen produces an infinite amount of messages for the
 
 '''
 
-import socket
+import socket, ssl
 import platform
 from time import sleep
 
@@ -52,7 +52,8 @@ class Bot(object):
 
     def __init__(self, host, owner, password, channels, user_name='Bear',
                  nick='Bearbot', real_name='I am the bearest', cmd_prefix='.',
-                 buffer=4096, port=6667, msg_delay=.5):
+                 buffer=4096, port=9999, msg_delay=.5, ssl=True):
+        
         self.host = host
         self.owner = owner
         self.password = password
@@ -64,11 +65,9 @@ class Bot(object):
         self.buffer = buffer  # Buffer size in bytes
         self.port = port
         self.msg_delay = msg_delay  # Flood control
-
+        self.ssl = ssl
         self.alive = True  # Running status
-        
         self.irc = socket.socket()
-        
         self.version = '%s / %s' % (version, system_info)
     
     # Initialization
@@ -76,6 +75,10 @@ class Bot(object):
     def _connect(self):
         ''' Connects to server and configures irc details  '''
         self.irc.connect((self.host, self.port))
+        
+        if self.ssl:
+            self.irc = ssl.wrap_socket(self.irc)
+        
         self.set_nick(self.nick)
         self.send('USER %s 0 * :%s' % (self.user_name, self.realname))
         errors = self.join(self.channels)
