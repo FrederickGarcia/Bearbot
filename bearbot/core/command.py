@@ -56,9 +56,9 @@ class Command(object):
     
     # Overriden Methods
     
-    def notify(self, message):
+    def notice(self, message):
         ''' Sends NOTICE response to user command '''
-        self.bot.notify(self.msg.nick, message)
+        self.bot.notice(self.msg.nick, message)
     
     # Accessors
     
@@ -141,7 +141,7 @@ def owner(cmd_def):
         if cmd.msg.nick == cmd.bot.owner:
             cmd_def(cmd)
         else:
-            cmd.notify('You do not have permission to run this command.')
+            cmd.notice('You do not have permission to run this command.')
     return new_cmd_def
 
 # More decorators
