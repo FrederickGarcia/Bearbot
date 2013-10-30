@@ -16,14 +16,26 @@ Note: The msg_gen produces an infinite amount of messages for the
 '''
 
 import socket
+import platform
 from time import sleep
 
 from bearbot.core.message import *
 from bearbot.core.event import *
 from bearbot.core import config
 
-except_str = 'EXCEPTION OCCURRED - '
-crlf = '\r\n'.encode()
+# Metadata
+
+version = 'Bearbot 0.1a'
+system_info = 'Python %s on %s %s' % (platform.python_version(),
+                                      platform.system(), 
+                                      platform.release())
+
+source = 'https://github.com/FrederickGarcia/Bearbot'
+
+# Constants
+
+EXCEPTION = '! EXCEPTION OCCURRED - '
+CRLF = '\r\n'.encode()
 
 class Bot(object):
     ''' Connects to an irc server and listens to incoming messages
@@ -54,7 +66,10 @@ class Bot(object):
         self.msg_delay = msg_delay  # Flood control
 
         self.alive = True  # Running status
+        
         self.irc = socket.socket()
+        
+        self.version = '%s / %s' % (version, system_info)
     
     # Initialization
     
@@ -79,20 +94,20 @@ class Bot(object):
     
     def msg_gen(self):
         ''' Provides messages until bot dies '''
-        for msg in self.irc.recv(self.buffer).split(crlf):
+        for msg in self.irc.recv(self.buffer).split(CRLF):
             if not len(msg) > 3:
                 continue
             try:
                 yield Message(msg.decode())
             except Exception as e:
-                self.log('%s %s\n' % (except_str, str(e)))
+                self.log('%s %s\n' % (EXCEPTION, str(e)))
 
     # Sending Methods
    
     def send(self, msg):
         ''' Sends message to the host using socket '''
         self.irc.send(('%s\r\n' % msg).encode())
-        self.log('%s ' % msg)
+        self.log('>> %s ' % msg)
         sleep(self.msg_delay)
     
     def send_generic(self, command, target, message):
@@ -103,7 +118,7 @@ class Bot(object):
         ''' Sends  PRIVMSG to target (user|#channel) '''
         self.send_generic('PRIVMSG', target, message)
     
-    def notify(self, target, message):
+    def notice(self, target, message):
         ''' Sends NOTICE to target with message '''
         self.send_generic('NOTICE', target, message)
     
@@ -138,10 +153,8 @@ class Bot(object):
                 if reply.command in errors:
                     channels.remove(channel)
                     error_msgs.append(reply)
-                    print(error_msgs)
         self.channels.append(channels)
         
-        print(error_msgs)
         if error_msgs == []:
             return None
         return error_msgs
@@ -161,7 +174,7 @@ class Bot(object):
             try:
                 print(str(message))  #logs to console
             except Exception as e:
-                print('%s %s' % (except_str, e))
+                print('%s %s' % (EXCEPTION, e))
     
     # Receiving methods
     
@@ -205,7 +218,7 @@ class Bot(object):
     
     def handle(self, msg):
         ''' Handles Messages '''
-        self.log('%s' % (msg.raw))
+        self.log('<< %s' % (msg.raw))
         SpaghettiHandler(self, msg)
 
     def set_msg_delay(self, seconds):
@@ -216,10 +229,11 @@ class Bot(object):
             self.msg_delay = seconds
             self.log('Message delay set to: %s seconds ' % seconds)
         except Exception as e:
-            self.log('%s (Message delay) ' % (except_str, e))
+            self.log('%s (Message delay) ' % (EXCEPTION, e))
 
     def close_connection(self):
         ''' Closes the irc connection '''
+        self.irc.shutdown(socket.SHUT_RDWR)
         self.irc.close()
 
 def main():
