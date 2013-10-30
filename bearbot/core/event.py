@@ -19,7 +19,8 @@ from bearbot.sub_modules import irc_commands, bot_commands, ctcp_commands
 
 #Dictionary of server command/command_handlers
 #TODO create methods to manage adding to this, similar to the command manager
-command_handlers = {'PRIVMSG': [bot_commands.privmsg_, ctcp_commands.ctcp_], 'PING': [irc_commands.ping_]}
+command_handlers = {'PRIVMSG': [bot_commands.privmsg_, ctcp_commands.ctcp_],
+                    'PING': [irc_commands.ping_]}
 
 # TODO For later
 # t = threading.Thread(target=handler, args=args, kwargs=kwargs)
@@ -32,6 +33,6 @@ class SpaghettiHandler(object):
         self.bot = bot
 
         # Sends each command to respective method
-        if msg.command in command_handlers.keys():
+        if msg.command in command_handlers:
             for handler in command_handlers[msg.command]:
                 handler(self, msg)
