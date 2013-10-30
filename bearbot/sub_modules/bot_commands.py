@@ -13,4 +13,4 @@ def privmsg_(handler, msg):
             cmd = Command(handler.bot, msg)
             command_dic[cmd.root](cmd)  # Runs command
         except Exception as e:
-            handler.bot.log('Command exception: %s' % e)
+            handler.bot.log('! User command exception: %s' % e)
