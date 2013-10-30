@@ -64,8 +64,8 @@ The Command object passed to your definition provides:
            class, so Bot object attributes can be referenced through a
            Command object.
 
-               Example: cmd.notify(cmd.msg.nick, 'Oh hi!') instead of..
-                        cmd.bot.notify(cmd.msg.nick, 'Oh hi!')
+               Example: cmd.notice(cmd.msg.nick, 'Oh hi!') instead of..
+                        cmd.bot.notice(cmd.msg.nick, 'Oh hi!')
 
          - WARNING: Using proxy methods in command function definitions
                     reduces performance slightly.  It's only for ease
@@ -200,19 +200,19 @@ def bots(cmd):
 def help_(cmd):
     ''' help *[command] - Lists commands, their syntax, and descriptions. '''
     if not cmd.args:
-        cmd.notify('Type %shelp [command] for the syntax and description of'\
+        cmd.notice('Type %shelp [command] for the syntax and description of'\
                    ' a command' % cmd.bot.cmd_prefix)
-        cmd.notify(cmd.cmd_prefix +
+        cmd.notice(cmd.cmd_prefix +
                    (' %s' % cmd.cmd_prefix).join(command_dic.keys()))
         return
     if len(cmd.args) > 1:
-        cmd.notify('The %s help command takes only one argument')
+        cmd.notice('The %s help command takes only one argument')
         return
     if cmd.args[0] in command_dic.keys():
-        cmd.notify('%s%s: %s' % (cmd.bot.cmd_prefix, cmd.args[0],
+        cmd.notice('%s%s: %s' % (cmd.bot.cmd_prefix, cmd.args[0],
                                  command_dic[cmd.args[0]].__doc__))
         return
-    cmd.notify('%s is not a command' % cmd.args[0])
+    cmd.notice('%s is not a command' % cmd.args[0])
 
 #######################################################################
 #                                                                     #
